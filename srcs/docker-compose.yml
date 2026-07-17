@@ -1,0 +1,76 @@
+version: '3'
+
+# The containers *(Services)
+
+
+services:
+
+#----------NGINX CONTAINER-----------------
+  nginx:
+   build:
+    context: ./requirements/nginx
+    dockerfile: Dockerfile
+   container_name: nginx
+   depends_on:
+     - wordpress
+   ports:
+     - "443:443"
+   networks:
+     - inception
+   volumes:
+     - wordpress:/var/www/wordpress
+   restart: always
+
+#----------MARIADB CONTAINER-----------------
+  mariadb:
+   build:
+    context: ./requirements/mariadb
+    dockerfile: Dockerfile
+   container_name: mariadb
+   env_file:
+     - .env
+   networks:
+     - inception
+   volumes:
+     - mariadb:/var/lib/mysql
+   restart: always
+
+#----------WORDPRESS CONTAINER-----------------
+  wordpress:
+   build:
+    context: ./requirements/wordpress
+    dockerfile: Dockerfile
+   container_name: wordpress
+   depends_on:
+    - mariadb
+   env_file:
+    - .env
+   networks:
+    - inception
+   volumes:
+     - wordpress:/var/www/wordpress
+   restart: always
+   
+
+
+# Network namespace setup ajmi so the containers talk to each others without touching the host wifi card
+
+networks:
+ inception:
+  driver: bridge
+
+# Storage setup bypassing the Union FS layer so the database doenst get deleted when the container restarts
+
+volumes:
+  wordpress:
+   driver: local
+   driver_opts:
+     type: none
+     o: bind
+     device: /home/ilarhrib/data/wordpress
+  mariadb:
+   driver: local
+   driver_opts:
+     type: none
+     o: bind
+     device: /home/ilarhrib/data/mariadb
