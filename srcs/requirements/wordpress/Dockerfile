@@ -1,3 +1,4 @@
+# pulling a debian 11 filesystem
 FROM debian:bullseye 
 
 RUN apt-get update -y && apt-get install -y \

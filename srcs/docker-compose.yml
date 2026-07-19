@@ -1,76 +1,77 @@
-version: '3'
+version: '3' #version 3 for multi host deployment and for compability with modern features
 
 # The containers *(Services)
 
 
-services:
+services: # declaring a list of independant containers
 
 #----------NGINX CONTAINER-----------------
-  nginx:
-   build:
-    context: ./requirements/nginx
-    dockerfile: Dockerfile
-   container_name: nginx
-   depends_on:
+
+  nginx: # first container, declaring the internal hostname and service def for the webserver
+   build: # compiling file localy rather than pulling a docker image from docker hub 
+    context: ./requirements/nginx #files that will be sent for the build engine
+    dockerfile: Dockerfile # build instructions file
+   container_name: nginx #hardcoding the physical name for the container to be nginx rather than srcs_nginx_1
+   depends_on: #Since nginx is depending on wordpress it should wait for it to initialize
      - wordpress
-   ports:
+   ports: # accepting connections from port 443 for the website requests 
      - "443:443"
-   networks:
+   networks: # making the virtual ethernet pair (the tunnel) linking the docker bridge and the container network namespace
      - inception
-   volumes:
+   volumes: # making a shared volume between nginx and wordpress for content availility
      - wordpress:/var/www/wordpress
-   restart: always
+   restart: always # making the daemon always restart our container if it happens to be killed or sleeping due to some case
 
 #----------MARIADB CONTAINER-----------------
-  mariadb:
-   build:
-    context: ./requirements/mariadb
-    dockerfile: Dockerfile
-   container_name: mariadb
-   env_file:
+  mariadb: # declaring the internal container hostname
+   build: # choosing local build 
+    context: ./requirements/mariadb # build engine files
+    dockerfile: Dockerfile #build instruction files
+   container_name: mariadb # hardcoding container name 
+   env_file: # giving the mariadb access to the env file for the secrets it will need upon the creation and the setup of the database
      - .env
-   networks:
+   networks: # attaching mariadb to the inception network where wordpress exist for requests and data flow
      - inception
-   volumes:
+   volumes: # saving the database file in the host vm drive so content is not lost upon container restart or shutdown
      - mariadb:/var/lib/mysql
-   restart: always
+   restart: always # making the daemon always restart the service when it gets killed  
 
 #----------WORDPRESS CONTAINER-----------------
-  wordpress:
-   build:
-    context: ./requirements/wordpress
-    dockerfile: Dockerfile
-   container_name: wordpress
-   depends_on:
+  wordpress: # declaring the internal container hostname
+   build: # local file build
+    context: ./requirements/wordpress # build engine files
+    dockerfile: Dockerfile # build instructions file
+   container_name: wordpress # changing the container name as the subjet requires
+   depends_on: # pausing the wordpress container readiness until mariadb is runing then continue for content availibilty
     - mariadb
-   env_file:
+   env_file: # access to env file for secret data and more
     - .env
-   networks:
+   networks: # adding wordpress to the inception network where the other services belongs so they all connect with each other
     - inception
-   volumes:
+   volumes: # wordpress framework and files volume which is readable by nginx for content availibilty
      - wordpress:/var/www/wordpress
-   restart: always
+   restart: always # making the daemon always restart the service when it gets killed  
    
 
 
 # Network namespace setup ajmi so the containers talk to each others without touching the host wifi card
 
-networks:
- inception:
-  driver: bridge
+networks: # creating a private network where the containers will live and communicate with dns resolution
+ inception: # its name
+  driver: bridge # its type where its like a router between the container and the Host
 
 # Storage setup bypassing the Union FS layer so the database doenst get deleted when the container restarts
 
-volumes:
+volumes: # costumizing the default volume managment docker do 
   wordpress:
-   driver: local
-   driver_opts:
-     type: none
-     o: bind
-     device: /home/ilarhrib/data/wordpress
-  mariadb:
-   driver: local
-   driver_opts:
-     type: none
-     o: bind
-     device: /home/ilarhrib/data/mariadb
+   driver: local # local and not aws or external drive
+   driver_opts: # commands with options rather than automated volume creation
+     type: none # driver type set to none meaning we are not mounting a raw block device but were pointing an existing folder 
+     o: bind # mount --bind system call that creates a tunnel path between the internal system and our home directory
+     device: /home/ilarhrib/data/wordpress # the absolute path of the volume
+  mariadb: 
+   driver: local # local volume rather than external or cloud
+   driver_opts: # creation by command rather than automated
+     type: none # skipping the mounting of a block cause we are just pointing to an existing path 
+     o: bind # making a tunnel between the container and the host
+     device: /home/ilarhrib/data/mariadb # the volumes's absolute path
