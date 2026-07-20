@@ -1,14 +1,30 @@
 #!/bin/bash
 
-service mariadb start # booting the mariadb before executing commands
-sleep 2 # sleeping for two seconds until maria is up
+# Check if the specific WordPress database exists instead of the system files
+if [ ! -d "/var/lib/mysql/${SQL_DATABASE}" ]; then
+    echo "Initializing MariaDB for the first time..."
+    
+    # Start the daemon in the background temporarily
+    mysqld_safe &
+    
+    # Wait until it is actually ready to accept connections
+    until mysqladmin ping >/dev/null 2>&1; do
+        sleep 1
+    done
 
-mysql -e "CREATE DATABASE IF NOT EXISTS \'${SQL_DATABASE}\';" # command to create a new storage directory if it doesnt exist
+    # Inject the SQL configuration securely
+    mysql -u root -e "CREATE DATABASE IF NOT EXISTS \`${SQL_DATABASE}\`;"
+    mysql -u root -e "CREATE USER IF NOT EXISTS \`${SQL_USER}\`@'%' IDENTIFIED BY '${SQL_PASSWORD}';"
+    mysql -u root -e "GRANT ALL PRIVILEGES ON \`${SQL_DATABASE}\`.* TO \`${SQL_USER}\`@'%';"
+    mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${SQL_ROOT_PASSWORD}';"
+    mysql -u root -p"${SQL_ROOT_PASSWORD}" -e "FLUSH PRIVILEGES;"
 
-mysql -e "CREATE USER IF NOT EXISTS \'${SQL_USER}\'@'%' IDENTIFIED BY \'${SQL_PASSWORD}';" # creates a wordpress user that can connect from any ip adress
-mysql -e "GRANT PRIVILEGES ON \'${SQL_DATABASE}\'.* TO \'${SQL_USER}\'@'%';" # giving power to the new user 
-mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${SQL_ROOT_PASSWORD}';" # removing the local host from the root connections
-mysql -e "FLUSH PRIVILIGES;" # AFTER CREATING USERS OR ALTER PASSWORDS MARIADB CACHES OLD SETTINGS , WHEN FLUSHING IT FORCES THE DB TO DUMP ITS CACHE AND THEN APPLY THE RULES WE JUST CREATED 
-mysqladmin -u root0 -p$SQL_ROOT_PASSWPKRD shutdown # shuting dowm the database rather than killing it to avoid corruptroiom
+    # Shut down the background process cleanly
+    mysqladmin -u root -p"${SQL_ROOT_PASSWORD}" shutdown
+else
+    echo "MariaDB is already configured."
+fi
 
-exec mysql_safe # reboots the db and replace itself with the bach script PID 1 
+# Launch the daemon in the foreground as PID 1
+echo "Starting MariaDB..."
+exec mysqld_safe

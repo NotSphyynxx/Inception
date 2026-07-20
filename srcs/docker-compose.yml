@@ -44,6 +44,8 @@ services: # declaring a list of independant containers
    container_name: wordpress # changing the container name as the subjet requires
    depends_on: # pausing the wordpress container readiness until mariadb is runing then continue for content availibilty
     - mariadb
+  #  ports: # accepting connections from port 443 for the website requests 
+  #    - "6969:6969"
    env_file: # access to env file for secret data and more
     - .env
    networks: # adding wordpress to the inception network where the other services belongs so they all connect with each other
@@ -51,8 +53,7 @@ services: # declaring a list of independant containers
    volumes: # wordpress framework and files volume which is readable by nginx for content availibilty
      - wordpress:/var/www/wordpress
    restart: on-failure # making the daemon always restart the service when it gets killed  
-   
-
+  
 
 # Network namespace setup ajmi so the containers talk to each others without touching the host wifi card
 

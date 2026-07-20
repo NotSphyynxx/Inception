@@ -17,6 +17,9 @@ RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli
 # injecting our custom files conf andd the script into the container space
 COPY ./conf/www.conf /etc/php/7.4/fpm/pool.d/www.conf
 COPY ./tools/script.sh /usr/local/bin/script.sh
+RUN chmod +x /usr/local/bin/script.sh
+
+EXPOSE 9000 
 
 # setting our root directory so nginx can read all the files it need 
 WORKDIR /var/www/wordpress

@@ -8,5 +8,6 @@ RUN apt-get update -y && apt-get install -y mariadb-server
 COPY ./conf/50-server.cnf /etc/mysql/mariadb.conf.d/50-server.cnf
 #putting our database formatting script in the standard dir in the linux $PATH so it gets run later as a globaly runable program
 COPY ./tools/script.sh /usr/local/bin/script.sh 
+RUN chmod +x /usr/local/bin/script.sh
 #when the container is on we run this script to create the users, format the tables, and lock the container and it will be the PID 1
 CMD ["/usr/local/bin/script.sh"]
