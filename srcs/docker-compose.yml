@@ -20,7 +20,7 @@ services: # declaring a list of independant containers
      - inception
    volumes: # making a shared volume between nginx and wordpress for content availility
      - wordpress:/var/www/wordpress
-   restart: always # making the daemon always restart our container if it happens to be killed or sleeping due to some case
+   restart: on-failure # making the daemon always restart our container if it happens to be killed or sleeping due to some case
 
 #----------MARIADB CONTAINER-----------------
   mariadb: # declaring the internal container hostname
@@ -34,7 +34,7 @@ services: # declaring a list of independant containers
      - inception
    volumes: # saving the database file in the host vm drive so content is not lost upon container restart or shutdown
      - mariadb:/var/lib/mysql
-   restart: always # making the daemon always restart the service when it gets killed  
+   restart: on-failure # making the daemon always restart the service when it gets killed  
 
 #----------WORDPRESS CONTAINER-----------------
   wordpress: # declaring the internal container hostname
@@ -50,7 +50,7 @@ services: # declaring a list of independant containers
     - inception
    volumes: # wordpress framework and files volume which is readable by nginx for content availibilty
      - wordpress:/var/www/wordpress
-   restart: always # making the daemon always restart the service when it gets killed  
+   restart: on-failure # making the daemon always restart the service when it gets killed  
    
 
 
