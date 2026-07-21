@@ -37,7 +37,6 @@ if [ ! -f /var/www/wordpress/wp-config.php ]; then
         --role=author \
         --path='/var/www/wordpress'
 
-    echo "ZABA" > /var/www/wordpress/index.html
 fi
 
 # Launch PHP-FPM
